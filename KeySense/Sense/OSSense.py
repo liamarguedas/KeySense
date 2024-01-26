@@ -10,6 +10,7 @@ import string
 
 
 class OSSense:
+
     def __init__(self, scripts_path=None):
         self.KeySense = Path(__file__).parents[1]
 
@@ -33,7 +34,7 @@ class OSSense:
         # Keyboard actions
         self.keyboard = Controller()
         (
-            self.NEWLINE_MAP,
+            self.ENTER_MAP,
             self.TAB_MAP,
         ) = sense_lan()  # If in 'replacer', generates 4 spaces line
 
@@ -58,7 +59,7 @@ class OSSense:
         return False
 
     def is_special_action(self, letter):
-        return letter in [self.NEWLINE_MAP, self.TAB_MAP]
+        return letter in [self.ENTER_MAP, self.TAB_MAP]
 
     def is_lan_specific_letter(self, letter):
         if letter in self.special_letters_pt or letter in self.special_letters_es_la1:
@@ -73,16 +74,18 @@ class OSSense:
         self.keyboard.release(Key.alt_gr)
 
     def execute_special_action(self, letter):
-        if letter == self.NEWLINE_MAP:
+
+        if letter == self.ENTER_MAP:
             self.simulate_key(Key.enter)
+
         if letter == self.TAB_MAP:
             for _ in range(4):
                 self.simulate_key(Key.tab)
 
     def execute_lan_specific_letter(self, letter):
-                # TODO 
-                self.type_with_tilde_enye_cedilla(letter)
-                self.type_with_tilde_enye_cedilla(letter)
+
+        self.type_with_tilde_enye_cedilla(letter)
+        self.type_with_tilde_enye_cedilla(letter)
 
     def trigger_hotkey_script(self):
         self.clear_cache()
@@ -100,7 +103,7 @@ class OSSense:
             if self.is_lan_specific_letter(letter):
                 self.execute_lan_specific_letter(letter)
 
-            else:
+            if not self.is_lan_specific_letter(letter) and not self.is_special_action(letter):
                 self.simulate_key(letter)
 
     def trigger_replacer_script(self, trigger):
@@ -109,6 +112,7 @@ class OSSense:
         self.clear_cache()
 
     def capture_trigger(self, key):
+
         key = self.key_to_str(key)
         if not self.is_trigger(key):
             self.clear_cache()
