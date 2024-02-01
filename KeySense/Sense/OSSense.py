@@ -21,22 +21,13 @@ class OSSense:
         with open(scripts_path, "r", encoding="utf-8") as scripts:
             self.scripts = yaml.full_load(scripts)["scripts"]
 
-        if self.has_triggers():
-
-            self.script_triggers = [script["trigger"] for script in self.scripts]
-            self.script_replacers = [script["replacer"] for script in self.scripts]
-            self.script_map = {item["trigger"]: item["replacer"] for item in self.scripts}
-            self.script_triggers_len = [len(trigger) for trigger in self.script_triggers]
-
-        if self.has_hotkeys():
-            self.hotkey_triggers = [scripts["hotkey"] for script in self.scripts]
-            self.hotkey_dos = [script["do"] for script in self.scripts]
-            self.hotkey_map = {item["hotkey"]:item["do"] for item in self.scripts}
-
         # Listener
         self.keys_pressed = list()
-        self.hotkey_trigger = [Key.alt_l, Key.ctrl_l, Key.shift]
-        self.hotkey_translation_map = {hotkey_lan()[key]:self.hotkey_trigger[key] for key in range(len(self.hotkey_trigger))}
+        self.supported_hotkeys = [Key.alt_l, Key.ctrl_l, Key.shift]
+        self.hotkey_translation_map = {
+            key: hotkey_lan()[hotkey]
+            for hotkey, key in enumerate(self.supported_hotkeys)
+        }
         self.replacer_trigger = string.printable
 
         # Keyboard actions
@@ -50,23 +41,61 @@ class OSSense:
         self.special_letters_es_la1 = sense_es_la1()
         self.special_letters_pt = sense_pt_br()
 
+        # Load files
+        self.load_scripts()
+
     @staticmethod
     def key_to_str(key):
         return str(key).replace("'", "")
 
     def has_triggers(self):
-        try:
-            self.scripts["trigger"]
+        if "trigger" in [list(script.keys())[0] for script in self.scripts]:
             return True
-        except Exception as error:
-            return False
+        return False
 
     def has_hotkeys(self):
-        try:
-            self.scripts["hotkeys"]
+        if "hotkey" in [list(script.keys())[0] for script in self.scripts]:
             return True
-        except Exception as error:
-            return False
+        return False
+
+    def load_scripts(self):
+
+        if self.has_triggers():
+
+            self.script_triggers = [
+                script["trigger"]
+                for script in self.scripts
+                if list(script.keys())[0] == "trigger"
+            ]
+
+            self.script_replacers = [
+                script["replacer"]
+                for script in self.scripts
+                if list(script.keys())[0] == "trigger"
+            ]
+            self.script_map = {
+                self.script_triggers[item]: self.script_replacers[item]
+                for item in range(len(self.script_replacers))
+            }
+            self.script_triggers_len = [
+                len(trigger) for trigger in self.script_triggers
+            ]
+
+        if self.has_hotkeys():
+            self.hotkey_triggers = [
+                script["hotkey"]
+                for script in self.scripts
+                if list(script.keys())[0] == "hotkey"
+            ]
+            self.hotkey_dos = [
+                script["do"]
+                for script in self.scripts
+                if list(script.keys())[0] == "hotkey"
+            ]
+            self.hotkey_map = {
+                self.hotkey_triggers[item]: self.hotkey_dos[item]
+                for item in range(len(self.hotkey_dos))
+            }
 
     def clear_cache(self):
         self.keys_pressed.clear()
@@ -76,7 +105,7 @@ class OSSense:
         self.keyboard.release(key)
 
     def is_trigger(self, key):
-        if (key in self.hotkey_trigger) or (key in self.replacer_trigger):
+        if (key in self.supported_hotkeys) or (key in self.replacer_trigger):
             return True
         return False
 
@@ -117,10 +146,9 @@ class OSSense:
         self.type_with_tilde_enye_cedilla(letter)
 
     def trigger_hotkey_script(self, key):
-       # self.listener(auto_clear_cash=False, on_press=)
+        # self.listener(auto_clear_cash=False, on_press=)
 
         self.clear_cache()
-
 
     def delete_text(self, text):
         for _ in range(len(text)):
@@ -134,7 +162,9 @@ class OSSense:
             if self.is_lan_specific_letter(letter):
                 self.execute_lan_specific_letter(letter)
 
-            if not self.is_lan_specific_letter(letter) and not self.is_special_action(letter):
+            if not self.is_lan_specific_letter(letter) and not self.is_special_action(
+                letter
+            ):
                 self.simulate_key(letter)
 
     def trigger_replacer_script(self, trigger):
@@ -142,13 +172,25 @@ class OSSense:
         self.write_text(text=self.script_map[trigger])
         self.clear_cache()
 
+    def is_present_hotkey(self, trigger):
+        for hotkey_trigger in self.hotkey_triggers:
+            if trigger in hotkey_trigger:
+                return True
+        return False
+
     def capture_trigger(self, key):
 
-        key = self.key_to_str(key)
-        if not self.is_trigger(key):
-            self.clear_cache()
+        if key in [_key for _key in self.supported_hotkeys] and self.is_present_hotkey(
+            self.hotkey_translation_map[key]
+        ):
 
-        if key in [self.key_to_str(_key) for _key in self.hotkey_trigger]:
+            print("OPA") # TODO
+
+        key = self.key_to_str(key)
+
+        if not self.is_trigger(key):
+
+            self.clear_cache()
             self.trigger_hotkey_script(key)
 
         if key in self.replacer_trigger:
@@ -162,9 +204,14 @@ class OSSense:
             ]:
                 self.trigger_replacer_script(trigger="".join(self.keys_pressed))
 
-    def listener(self, auto_clear_cash = True, on_press = self.capture_trigger):
+    def listener(self, auto_clear_cash=True, on_press=None):
+
         if auto_clear_cash:
             self.clear_cache()
+
+        if on_press is None:
+            on_press = self.capture_trigger
+
         with Listener(on_press=on_press) as listener:
             listener.join()
 
