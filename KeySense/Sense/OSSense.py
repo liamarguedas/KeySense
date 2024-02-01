@@ -67,11 +67,19 @@ class OSSense:
         return False
 
     def type_with_tilde_enye_cedilla(self, letter):
+
         # Executes tilde, enye (ñ) and C cedilla (ç)
 
-        self.keyboard.press(Key.alt_gr)
-        self.simulate_key(letter)
-        self.keyboard.release(Key.alt_gr)
+        # For some reason ç lowercase doesn't execute with the normal code... :l
+        # Implementing this .type hardcoded for this particular case
+
+        if letter == self.special_letters_pt[-2]:
+            self.keyboard.type(self.special_letters_pt[-2])
+
+        else:
+            self.keyboard.press(Key.alt_gr)
+            self.simulate_key(letter)
+            self.keyboard.release(Key.alt_gr)
 
     def execute_special_action(self, letter):
 
@@ -84,7 +92,6 @@ class OSSense:
 
     def execute_lan_specific_letter(self, letter):
 
-        self.type_with_tilde_enye_cedilla(letter)
         self.type_with_tilde_enye_cedilla(letter)
 
     def trigger_hotkey_script(self):
