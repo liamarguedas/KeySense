@@ -29,6 +29,7 @@ class OSSense:
             for hotkey, key in enumerate(self.supported_hotkeys)
         }
         self.replacer_trigger = string.printable
+        self.listening_for_hotkey = False
 
         # Keyboard actions
         self.keyboard = Controller()
@@ -97,7 +98,12 @@ class OSSense:
                 for item in range(len(self.hotkey_dos))
             }
 
+            self.hotkey_triggers_len = [
+                len(trigger[1:]) for trigger in self.hotkey_triggers
+            ]
+
     def clear_cache(self):
+        self.listening_for_hotkey = False
         self.keys_pressed.clear()
 
     def simulate_key(self, key):
@@ -145,11 +151,6 @@ class OSSense:
 
         self.type_with_tilde_enye_cedilla(letter)
 
-    def trigger_hotkey_script(self, key):
-        # self.listener(auto_clear_cash=False, on_press=)
-
-        self.clear_cache()
-
     def delete_text(self, text):
         for _ in range(len(text)):
             self.simulate_key(Key.backspace)
@@ -178,31 +179,58 @@ class OSSense:
                 return True
         return False
 
+    def trigger_hotkey_script(self, trigger):
+        print("WORKED")  # TODO
+        # IMPLEMENT TRIGGERS
+        print("trigger")
+        self.clear_cache()
+
     def capture_trigger(self, key):
 
-        if key in [_key for _key in self.supported_hotkeys] and self.is_present_hotkey(
-            self.hotkey_translation_map[key]
+        if self.listening_for_hotkey or (
+            key in [_key for _key in self.supported_hotkeys]
+            and self.is_present_hotkey(self.hotkey_translation_map[key])
         ):
+            print("detected hotkey")
+            if not self.listening_for_hotkey:
+                print("now listening to hotkeys")
+                self.hotkey = self.hotkey_translation_map[key]
+                self.listening_for_hotkey = True
 
-            print("OPA") # TODO
+            else:
+                key = self.key_to_str(key)
+                self.keys_pressed.append(key)
 
-        key = self.key_to_str(key)
+                if len(self.keys_pressed) > max(self.hotkey_triggers_len):
+                    self.clear_cache()
 
-        if not self.is_trigger(key):
+                if self.hotkey + "".join(self.keys_pressed) in [
+                    trigger for trigger in self.hotkey_triggers
+                ]:
 
-            self.clear_cache()
-            self.trigger_hotkey_script(key)
+                    print(self.hotkey + "".join(self.keys_pressed))
+                    self.trigger_hotkey_script(
+                        trigger=self.hotkey + "".join(self.keys_pressed)
+                    )
 
-        if key in self.replacer_trigger:
-            self.keys_pressed.append(key)
+        if not self.listening_for_hotkey:
 
-            if len(self.keys_pressed) > max(self.script_triggers_len):
+            key = self.key_to_str(key)
+
+            if not self.is_trigger(key):
+
                 self.clear_cache()
 
-            if "".join(self.keys_pressed) in [
-                trigger for trigger in self.script_triggers
-            ]:
-                self.trigger_replacer_script(trigger="".join(self.keys_pressed))
+            if key in self.replacer_trigger:
+                self.keys_pressed.append(key)
+
+                if len(self.keys_pressed) > max(self.script_triggers_len):
+                    self.clear_cache()
+
+                if "".join(self.keys_pressed) in [
+                    trigger for trigger in self.script_triggers
+                ]:
+                    self.trigger_replacer_script(trigger="".join(self.keys_pressed))
 
     def listener(self, auto_clear_cash=True, on_press=None):
 
