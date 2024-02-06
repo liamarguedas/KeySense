@@ -16,3 +16,9 @@ scripts:
 
   - hotkey: "+e"
     do: ""
+
+  - hotkey: "!g"
+    do: ""
+
+  - hotkey: "#g"
+    do: ""

@@ -144,8 +144,8 @@ class OSSense:
             self.simulate_key(Key.enter)
 
         if letter == self.TAB_MAP:
-            for _ in range(4):
-                self.simulate_key(Key.tab)
+
+            self.simulate_key(Key.tab)
 
     def execute_lan_specific_letter(self, letter):
 
@@ -191,15 +191,19 @@ class OSSense:
             key in [_key for _key in self.supported_hotkeys]
             and self.is_present_hotkey(self.hotkey_translation_map[key])
         ):
-            print("detected hotkey")
+            print("hotkey detected")
             if not self.listening_for_hotkey:
-                print("now listening to hotkeys")
+
                 self.hotkey = self.hotkey_translation_map[key]
                 self.listening_for_hotkey = True
 
             else:
+                if key in [_key for _key in self.supported_hotkeys]:
+                    key = self.hotkey_translation_map[key]
+
                 key = self.key_to_str(key)
                 self.keys_pressed.append(key)
+                print(self.keys_pressed)
 
                 if len(self.keys_pressed) > max(self.hotkey_triggers_len):
                     self.clear_cache()
