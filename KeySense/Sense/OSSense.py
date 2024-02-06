@@ -236,11 +236,8 @@ class OSSense:
                 ]:
                     self.trigger_replacer_script(trigger="".join(self.keys_pressed))
 
-    def listener(self, auto_clear_cash=True, on_press=None):
-
-        if auto_clear_cash:
-            self.clear_cache()
-
+    def listener(self, on_press=None):
+        self.clear_cache()
         if on_press is None:
             on_press = self.capture_trigger
 
